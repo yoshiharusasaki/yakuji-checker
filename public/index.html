@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>薬事法・景品表示法 広告チェックツール</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #e2e0d8;
+    --border2: #ccc9bf;
+    --text: #1a1917;
+    --text2: #6b6860;
+    --text3: #9e9b94;
+    --accent: #1a6b4a;
+    --accent-bg: #e8f4ee;
+    --accent-border: #9fcfb8;
+    --danger: #c0392b;
+    --danger-bg: #fdf0ef;
+    --danger-border: #f5c0bb;
+    --warning: #a0680a;
+    --warning-bg: #fdf5e6;
+    --warning-border: #f5dba0;
+    --info: #1a5276;
+    --info-bg: #eaf2f8;
+    --info-border: #a9c9e0;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  body {
+    font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .page-wrapper {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  header {
+    margin-bottom: 2rem;
+  }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--accent);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--text2);
+    margin-left: 46px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+
+  .law-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .law-tab {
+    padding: 5px 13px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    font-size: 13px;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+
+  .law-tab:hover { border-color: var(--border2); color: var(--text); }
+  .law-tab.active { background: var(--accent-bg); color: var(--accent); border-color: var(--accent-border); font-weight: 500; }
+
+  textarea {
+    width: 100%;
+    min-height: 160px;
+    border: none;
+    outline: none;
+    resize: vertical;
+    font-size: 14px;
+    color: var(--text);
+    background: transparent;
+    line-height: 1.75;
+    font-family: inherit;
+  }
+
+  textarea::placeholder { color: var(--text3); }
+
+  .input-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  .char-count { font-size: 12px; color: var(--text3); }
+
+  .check-btn {
+    padding: 9px 22px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s;
+  }
+
+  .check-btn:hover { opacity: 0.88; }
+  .check-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 2.5rem;
+    color: var(--text2);
+    font-size: 14px;
+  }
+
+  .loading.show { display: block; }
+
+  .spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .results { display: none; }
+  .results.show { display: block; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+
+  .summary-card {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 14px 1rem;
+    text-align: center;
+  }
+
+  .summary-card .s-label {
+    font-size: 11px;
+    color: var(--text3);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  .summary-card .s-value {
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .s-value.danger { color: var(--danger); }
+  .s-value.warning { color: var(--warning); }
+  .s-value.neutral { color: var(--text2); }
+  .s-value.ok { color: var(--accent); }
+
+  .verdict-box {
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid;
+  }
+
+  .verdict-box.ng { background: var(--danger-bg); border-color: var(--danger-border); }
+  .verdict-box.caution { background: var(--warning-bg); border-color: var(--warning-border); }
+  .verdict-box.ok { background: var(--accent-bg); border-color: var(--accent-border); }
+
+  .verdict-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .verdict-box.ng .verdict-label { color: var(--danger); }
+  .verdict-box.caution .verdict-label { color: var(--warning); }
+  .verdict-box.ok .verdict-label { color: var(--accent); }
+
+  .verdict-text {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.65;
+  }
+
+  .issues-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: 10px;
+  }
+
+  .issue-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 1.25rem;
+    margin-bottom: 10px;
+    border-left: 3px solid;
+    box-shadow: var(--shadow);
+  }
+
+  .issue-card.ng { border-left-color: var(--danger); }
+  .issue-card.caution { border-left-color: #e6a817; }
+  .issue-card.info { border-left-color: #3a8bc0; }
+
+  .issue-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  .badge-ng { background: var(--danger-bg); color: var(--danger); }
+  .badge-caution { background: var(--warning-bg); color: var(--warning); }
+  .badge-info { background: var(--info-bg); color: var(--info); }
+
+  .badge-law {
+    font-size: 11px;
+    color: var(--text3);
+    background: var(--surface2);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .issue-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .issue-quote {
+    font-size: 13px;
+    color: var(--danger);
+    background: var(--danger-bg);
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+    margin: 6px 0;
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    word-break: break-all;
+  }
+
+  .issue-reason {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.65;
+    margin-bottom: 6px;
+  }
+
+  .issue-suggest {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.65;
+    padding: 8px 10px;
+    background: var(--accent-bg);
+    border-radius: var(--radius-sm);
+  }
+
+  .issue-suggest strong { font-weight: 600; color: var(--accent); }
+
+  .retry-btn {
+    width: 100%;
+    padding: 11px;
+    background: transparent;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    font-size: 14px;
+    color: var(--text2);
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 0.5rem;
+    transition: background 0.15s;
+  }
+
+  .retry-btn:hover { background: var(--surface2); }
+
+  .disclaimer {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 1.5rem;
+    line-height: 1.7;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+<div class="page-wrapper">
+
+  <header>
+    <div class="logo-row">
+      <div class="logo-icon">⚖</div>
+      <h1>薬事法・景品表示法 広告チェックツール</h1>
+    </div>
+    <p class="subtitle">健康食品・サプリメントの広告文を入力してください。AIが法的リスクを分析します。</p>
+  </header>
+
+  <div class="card">
+    <div class="section-label">チェック対象法令</div>
+    <div class="law-tabs">
+      <button class="law-tab active" data-law="全法令（薬機法・景品表示法・健康増進法・食品表示法）">全法令</button>
+      <button class="law-tab" data-law="薬機法（医薬品医療機器等法）">薬機法</button>
+      <button class="law-tab" data-law="景品表示法">景品表示法</button>
+      <button class="law-tab" data-law="健康増進法">健康増進法</button>
+      <button class="law-tab" data-law="食品表示法">食品表示法</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">広告文・表示文</div>
+    <textarea id="adText" placeholder="例：「飲むだけで体脂肪を燃焼！医師も驚く効果で、3日で−3kg確実。この成分が糖尿病を改善します。」&#10;&#10;広告文、パッケージ表記、SNS投稿文などを貼り付けてください。"></textarea>
+    <div class="input-footer">
+      <span class="char-count" id="charCount">0文字</span>
+      <button class="check-btn" id="checkBtn" onclick="runCheck()">チェック実行</button>
+    </div>
+  </div>
+
+  <div class="loading" id="loading">
+    <span class="spinner"></span>AIが法的リスクを分析中...
+  </div>
+
+  <div class="results" id="results"></div>
+
+  <p class="disclaimer">
+    ※ このツールはAIによる参考情報の提供を目的としています。最終的な法的判断は薬事コンサルタント・弁護士等の専門家にご確認ください。薬機法（医薬品医療機器等法）・景品表示法・健康増進法・食品表示法に基づき分析しています。
+  </p>
+
+</div>
+
+<script>
+const textarea = document.getElementById('adText');
+const charCount = document.getElementById('charCount');
+const checkBtn = document.getElementById('checkBtn');
+const loading = document.getElementById('loading');
+const results = document.getElementById('results');
+let activeLaw = '全法令（薬機法・景品表示法・健康増進法・食品表示法）';
+
+document.querySelectorAll('.law-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.law-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    activeLaw = tab.dataset.law;
+  });
+});
+
+textarea.addEventListener('input', () => {
+  charCount.textContent = textarea.value.length + '文字';
+});
+
+async function runCheck() {
+  const text = textarea.value.trim();
+  if (!text) { alert('広告文を入力してください。'); return; }
+
+  checkBtn.disabled = true;
+  loading.classList.add('show');
+  results.classList.remove('show');
+  results.innerHTML = '';
+
+  try {
+    const response = await fetch('/api/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adText: text, lawScope: activeLaw })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'サーバーエラーが発生しました。');
+    }
+
+    const data = await response.json();
+    renderResults(data);
+  } catch (e) {
+    results.innerHTML = `<div class="verdict-box ng"><div class="verdict-label">エラー</div><div class="verdict-text">${e.message || 'もう一度お試しください。'}</div></div>`;
+    results.classList.add('show');
+  }
+
+  loading.classList.remove('show');
+  checkBtn.disabled = false;
+}
+
+function renderResults(data) {
+  const vc = data.verdict === 'NG' ? 'ng' : data.verdict === 'CAUTION' ? 'caution' : 'ok';
+  const vl = data.verdict === 'NG' ? '要修正 — 違反リスクあり' : data.verdict === 'CAUTION' ? '要注意 — グレーゾーン' : '問題なし';
+  const infoCount = (data.issues || []).filter(i => i.level === 'INFO').length;
+
+  let html = `
+    <div class="summary-grid">
+      <div class="summary-card"><div class="s-label">NG項目</div><div class="s-value ${data.ngCount > 0 ? 'danger' : 'ok'}">${data.ngCount}</div></div>
+      <div class="summary-card"><div class="s-label">要注意項目</div><div class="s-value ${data.cautionCount > 0 ? 'warning' : 'ok'}">${data.cautionCount}</div></div>
+      <div class="summary-card"><div class="s-label">推奨事項</div><div class="s-value neutral">${infoCount}</div></div>
+    </div>
+    <div class="verdict-box ${vc}">
+      <div class="verdict-label">${vl}</div>
+      <div class="verdict-text">${data.verdictReason}</div>
+    </div>`;
+
+  if (data.issues && data.issues.length > 0) {
+    html += `<div class="issues-title">指摘事項（${data.issues.length}件）</div>`;
+    for (const issue of data.issues) {
+      const lvl = issue.level === 'NG' ? 'ng' : issue.level === 'CAUTION' ? 'caution' : 'info';
+      html += `
+        <div class="issue-card ${lvl}">
+          <div class="issue-header">
+            <span class="badge badge-${lvl}">${issue.level}</span>
+            <span class="badge-law">${issue.law}</span>
+          </div>
+          <div class="issue-title">${issue.title}</div>
+          ${issue.quote ? `<div class="issue-quote">「${issue.quote}」</div>` : ''}
+          <div class="issue-reason">${issue.reason}</div>
+          <div class="issue-suggest"><strong>対応案：</strong>${issue.suggestion}</div>
+        </div>`;
+    }
+  }
+
+  if (data.overallComment) {
+    html += `<div class="verdict-box ${vc}" style="margin-top:0.75rem;"><div class="verdict-label">総評</div><div class="verdict-text">${data.overallComment}</div></div>`;
+  }
+
+  html += `<button class="retry-btn" onclick="reset()">別の広告文をチェックする</button>`;
+  results.innerHTML = html;
+  results.classList.add('show');
+}
+
+function reset() {
+  textarea.value = '';
+  charCount.textContent = '0文字';
+  results.classList.remove('show');
+  results.innerHTML = '';
+  textarea.focus();
+}
+</script>
+</body>
+</html>
