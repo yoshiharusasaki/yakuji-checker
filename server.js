@@ -1,5 +1,4 @@
 const express = require('express');
-const fetch = require('node-fetch');
 const path = require('path');
 const multer = require('multer');
 const fetch = (...args) => globalThis.fetch(...args);
